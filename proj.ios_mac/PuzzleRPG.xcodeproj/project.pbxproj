@@ -1835,9 +1835,25 @@
 			path = LabelRPG;
 			sourceTree = "<group>";
 		};
+		804C664922296A2B00E0729D /* kvs */ = {
+			isa = PBXGroup;
+			children = (
+				804C664A22296A2B00E0729D /* leveldb */,
+			);
+			path = kvs;
+			sourceTree = "<group>";
+		};
+		804C664A22296A2B00E0729D /* leveldb */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = leveldb;
+			sourceTree = "<group>";
+		};
 		80C993A42141D42A00C10E96 /* Libs */ = {
 			isa = PBXGroup;
 			children = (
+				804C664922296A2B00E0729D /* kvs */,
 				80C993A52141D42A00C10E96 /* sqlite */,
 				80C993A92141D42A00C10E96 /* picojson */,
 			);
