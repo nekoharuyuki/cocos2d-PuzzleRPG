@@ -20,29 +20,21 @@
 
 namespace leveldb {
 
-static size_t TargetFileSize(const Options* options) {
-  return options->max_file_size;
-}
+static const int kTargetFileSize = 2 * 1048576;
 
 // Maximum bytes of overlaps in grandparent (i.e., level+2) before we
 // stop building a single file in a level->level+1 compaction.
-static int64_t MaxGrandParentOverlapBytes(const Options* options) {
-  return 10 * TargetFileSize(options);
-}
+static const int64_t kMaxGrandParentOverlapBytes = 10 * kTargetFileSize;
 
 // Maximum number of bytes in all compacted files.  We avoid expanding
 // the lower level file set of a compaction if it would make the
 // total compaction cover more than this many bytes.
-static int64_t ExpandedCompactionByteSizeLimit(const Options* options) {
-  return 25 * TargetFileSize(options);
-}
+static const int64_t kExpandedCompactionByteSizeLimit = 25 * kTargetFileSize;
 
-static double MaxBytesForLevel(const Options* options, int level) {
+static double MaxBytesForLevel(int level) {
   // Note: the result for level zero is not really used since we set
   // the level-0 compaction threshold based on number of files.
-
-  // Result for both level-0 and level-1
-  double result = 10. * 1048576.0;
+  double result = 10 * 1048576.0;  // Result for both level-0 and level-1
   while (level > 1) {
     result *= 10;
     level--;
@@ -50,9 +42,8 @@ static double MaxBytesForLevel(const Options* options, int level) {
   return result;
 }
 
-static uint64_t MaxFileSizeForLevel(const Options* options, int level) {
-  // We could vary per level to reduce number of files?
-  return TargetFileSize(options);
+static uint64_t MaxFileSizeForLevel(int level) {
+  return kTargetFileSize;  // We could vary per level to reduce number of files?
 }
 
 static int64_t TotalFileSize(const std::vector<FileMetaData*>& files) {
@@ -106,15 +97,15 @@ int FindFile(const InternalKeyComparator& icmp,
 
 static bool AfterFile(const Comparator* ucmp,
                       const Slice* user_key, const FileMetaData* f) {
-  // null user_key occurs before all keys and is therefore never after *f
-  return (user_key != nullptr &&
+  // NULL user_key occurs before all keys and is therefore never after *f
+  return (user_key != NULL &&
           ucmp->Compare(*user_key, f->largest.user_key()) > 0);
 }
 
 static bool BeforeFile(const Comparator* ucmp,
                        const Slice* user_key, const FileMetaData* f) {
-  // null user_key occurs after all keys and is therefore never before *f
-  return (user_key != nullptr &&
+  // NULL user_key occurs after all keys and is therefore never before *f
+  return (user_key != NULL &&
           ucmp->Compare(*user_key, f->smallest.user_key()) < 0);
 }
 
@@ -141,7 +132,7 @@ bool SomeFileOverlapsRange(
 
   // Binary search over file list
   uint32_t index = 0;
-  if (smallest_user_key != nullptr) {
+  if (smallest_user_key != NULL) {
     // Find the earliest possible internal key for smallest_user_key
     InternalKey small(*smallest_user_key, kMaxSequenceNumber,kValueTypeForSeek);
     index = FindFile(icmp, files, small.Encode());
@@ -338,9 +329,9 @@ Status Version::Get(const ReadOptions& options,
   const Comparator* ucmp = vset_->icmp_.user_comparator();
   Status s;
 
-  stats->seek_file = nullptr;
+  stats->seek_file = NULL;
   stats->seek_file_level = -1;
-  FileMetaData* last_file_read = nullptr;
+  FileMetaData* last_file_read = NULL;
   int last_file_read_level = -1;
 
   // We can search level-by-level since entries never hop across
@@ -374,13 +365,13 @@ Status Version::Get(const ReadOptions& options,
       // Binary search to find earliest index whose largest key >= ikey.
       uint32_t index = FindFile(vset_->icmp_, files_[level], ikey);
       if (index >= num_files) {
-        files = nullptr;
+        files = NULL;
         num_files = 0;
       } else {
         tmp2 = files[index];
         if (ucmp->Compare(user_key, tmp2->smallest.user_key()) < 0) {
           // All of "tmp2" is past any data for user_key
-          files = nullptr;
+          files = NULL;
           num_files = 0;
         } else {
           files = &tmp2;
@@ -390,7 +381,7 @@ Status Version::Get(const ReadOptions& options,
     }
 
     for (uint32_t i = 0; i < num_files; ++i) {
-      if (last_file_read != nullptr && stats->seek_file == nullptr) {
+      if (last_file_read != NULL && stats->seek_file == NULL) {
         // We have had more than one seek for this read.  Charge the 1st file.
         stats->seek_file = last_file_read;
         stats->seek_file_level = last_file_read_level;
@@ -430,9 +421,9 @@ Status Version::Get(const ReadOptions& options,
 
 bool Version::UpdateStats(const GetStats& stats) {
   FileMetaData* f = stats.seek_file;
-  if (f != nullptr) {
+  if (f != NULL) {
     f->allowed_seeks--;
-    if (f->allowed_seeks <= 0 && file_to_compact_ == nullptr) {
+    if (f->allowed_seeks <= 0 && file_to_compact_ == NULL) {
       file_to_compact_ = f;
       file_to_compact_level_ = stats.seek_file_level;
       return true;
@@ -517,7 +508,7 @@ int Version::PickLevelForMemTableOutput(
         // Check that file does not overlap too many grandparent bytes.
         GetOverlappingInputs(level + 2, &start, &limit, &overlaps);
         const int64_t sum = TotalFileSize(overlaps);
-        if (sum > MaxGrandParentOverlapBytes(vset_->options_)) {
+        if (sum > kMaxGrandParentOverlapBytes) {
           break;
         }
       }
@@ -537,10 +528,10 @@ void Version::GetOverlappingInputs(
   assert(level < config::kNumLevels);
   inputs->clear();
   Slice user_begin, user_end;
-  if (begin != nullptr) {
+  if (begin != NULL) {
     user_begin = begin->user_key();
   }
-  if (end != nullptr) {
+  if (end != NULL) {
     user_end = end->user_key();
   }
   const Comparator* user_cmp = vset_->icmp_.user_comparator();
@@ -548,21 +539,20 @@ void Version::GetOverlappingInputs(
     FileMetaData* f = files_[level][i++];
     const Slice file_start = f->smallest.user_key();
     const Slice file_limit = f->largest.user_key();
-    if (begin != nullptr && user_cmp->Compare(file_limit, user_begin) < 0) {
+    if (begin != NULL && user_cmp->Compare(file_limit, user_begin) < 0) {
       // "f" is completely before specified range; skip it
-    } else if (end != nullptr && user_cmp->Compare(file_start, user_end) > 0) {
+    } else if (end != NULL && user_cmp->Compare(file_start, user_end) > 0) {
       // "f" is completely after specified range; skip it
     } else {
       inputs->push_back(f);
       if (level == 0) {
         // Level-0 files may overlap each other.  So check if the newly
         // added file has expanded the range.  If so, restart search.
-        if (begin != nullptr && user_cmp->Compare(file_start, user_begin) < 0) {
+        if (begin != NULL && user_cmp->Compare(file_start, user_begin) < 0) {
           user_begin = file_start;
           inputs->clear();
           i = 0;
-        } else if (end != nullptr && user_cmp->Compare(file_limit,
-                                                       user_end) > 0) {
+        } else if (end != NULL && user_cmp->Compare(file_limit, user_end) > 0) {
           user_end = file_limit;
           inputs->clear();
           i = 0;
@@ -787,10 +777,10 @@ VersionSet::VersionSet(const std::string& dbname,
       last_sequence_(0),
       log_number_(0),
       prev_log_number_(0),
-      descriptor_file_(nullptr),
-      descriptor_log_(nullptr),
+      descriptor_file_(NULL),
+      descriptor_log_(NULL),
       dummy_versions_(this),
-      current_(nullptr) {
+      current_(NULL) {
   AppendVersion(new Version(this));
 }
 
@@ -805,7 +795,7 @@ void VersionSet::AppendVersion(Version* v) {
   // Make "v" current
   assert(v->refs_ == 0);
   assert(v != current_);
-  if (current_ != nullptr) {
+  if (current_ != NULL) {
     current_->Unref();
   }
   current_ = v;
@@ -845,10 +835,10 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
   // a temporary file that contains a snapshot of the current version.
   std::string new_manifest_file;
   Status s;
-  if (descriptor_log_ == nullptr) {
+  if (descriptor_log_ == NULL) {
     // No reason to unlock *mu here since we only hit this path in the
     // first call to LogAndApply (when opening the database).
-    assert(descriptor_file_ == nullptr);
+    assert(descriptor_file_ == NULL);
     new_manifest_file = DescriptorFileName(dbname_, manifest_file_number_);
     edit->SetNextFile(next_file_number_);
     s = env_->NewWritableFile(new_manifest_file, &descriptor_file_);
@@ -894,8 +884,8 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
     if (!new_manifest_file.empty()) {
       delete descriptor_log_;
       delete descriptor_file_;
-      descriptor_log_ = nullptr;
-      descriptor_file_ = nullptr;
+      descriptor_log_ = NULL;
+      descriptor_file_ = NULL;
       env_->DeleteFile(new_manifest_file);
     }
   }
@@ -903,7 +893,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
   return s;
 }
 
-Status VersionSet::Recover(bool *save_manifest) {
+Status VersionSet::Recover() {
   struct LogReporter : public log::Reader::Reporter {
     Status* status;
     virtual void Corruption(size_t bytes, const Status& s) {
@@ -926,10 +916,6 @@ Status VersionSet::Recover(bool *save_manifest) {
   SequentialFile* file;
   s = env_->NewSequentialFile(dscname, &file);
   if (!s.ok()) {
-    if (s.IsNotFound()) {
-      return Status::Corruption(
-            "CURRENT points to a non-existent file", s.ToString());
-    }
     return s;
   }
 
@@ -987,7 +973,7 @@ Status VersionSet::Recover(bool *save_manifest) {
     }
   }
   delete file;
-  file = nullptr;
+  file = NULL;
 
   if (s.ok()) {
     if (!have_next_file) {
@@ -1017,47 +1003,9 @@ Status VersionSet::Recover(bool *save_manifest) {
     last_sequence_ = last_sequence;
     log_number_ = log_number;
     prev_log_number_ = prev_log_number;
-
-    // See if we can reuse the existing MANIFEST file.
-    if (ReuseManifest(dscname, current)) {
-      // No need to save new manifest
-    } else {
-      *save_manifest = true;
-    }
   }
 
   return s;
-}
-
-bool VersionSet::ReuseManifest(const std::string& dscname,
-                               const std::string& dscbase) {
-  if (!options_->reuse_logs) {
-    return false;
-  }
-  FileType manifest_type;
-  uint64_t manifest_number;
-  uint64_t manifest_size;
-  if (!ParseFileName(dscbase, &manifest_number, &manifest_type) ||
-      manifest_type != kDescriptorFile ||
-      !env_->GetFileSize(dscname, &manifest_size).ok() ||
-      // Make new compacted MANIFEST if old one is too big
-      manifest_size >= TargetFileSize(options_)) {
-    return false;
-  }
-
-  assert(descriptor_file_ == nullptr);
-  assert(descriptor_log_ == nullptr);
-  Status r = env_->NewAppendableFile(dscname, &descriptor_file_);
-  if (!r.ok()) {
-    Log(options_->info_log, "Reuse MANIFEST: %s\n", r.ToString().c_str());
-    assert(descriptor_file_ == nullptr);
-    return false;
-  }
-
-  Log(options_->info_log, "Reusing MANIFEST %s\n", dscname.c_str());
-  descriptor_log_ = new log::Writer(descriptor_file_, manifest_size);
-  manifest_file_number_ = manifest_number;
-  return true;
 }
 
 void VersionSet::MarkFileNumberUsed(uint64_t number) {
@@ -1090,8 +1038,7 @@ void VersionSet::Finalize(Version* v) {
     } else {
       // Compute the ratio of current size to size limit.
       const uint64_t level_bytes = TotalFileSize(v->files_[level]);
-      score =
-          static_cast<double>(level_bytes) / MaxBytesForLevel(options_, level);
+      score = static_cast<double>(level_bytes) / MaxBytesForLevel(level);
     }
 
     if (score > best_score) {
@@ -1177,7 +1124,7 @@ uint64_t VersionSet::ApproximateOffsetOf(Version* v, const InternalKey& ikey) {
         Table* tableptr;
         Iterator* iter = table_cache_->NewIterator(
             ReadOptions(), files[i]->number, files[i]->file_size, &tableptr);
-        if (tableptr != nullptr) {
+        if (tableptr != NULL) {
           result += tableptr->ApproximateOffsetOf(ikey.Encode());
         }
         delete iter;
@@ -1300,12 +1247,12 @@ Compaction* VersionSet::PickCompaction() {
   // We prefer compactions triggered by too much data in a level over
   // the compactions triggered by seeks.
   const bool size_compaction = (current_->compaction_score_ >= 1);
-  const bool seek_compaction = (current_->file_to_compact_ != nullptr);
+  const bool seek_compaction = (current_->file_to_compact_ != NULL);
   if (size_compaction) {
     level = current_->compaction_level_;
     assert(level >= 0);
     assert(level+1 < config::kNumLevels);
-    c = new Compaction(options_, level);
+    c = new Compaction(level);
 
     // Pick the first file that comes after compact_pointer_[level]
     for (size_t i = 0; i < current_->files_[level].size(); i++) {
@@ -1322,10 +1269,10 @@ Compaction* VersionSet::PickCompaction() {
     }
   } else if (seek_compaction) {
     level = current_->file_to_compact_level_;
-    c = new Compaction(options_, level);
+    c = new Compaction(level);
     c->inputs_[0].push_back(current_->file_to_compact_);
   } else {
-    return nullptr;
+    return NULL;
   }
 
   c->input_version_ = current_;
@@ -1367,8 +1314,7 @@ void VersionSet::SetupOtherInputs(Compaction* c) {
     const int64_t inputs1_size = TotalFileSize(c->inputs_[1]);
     const int64_t expanded0_size = TotalFileSize(expanded0);
     if (expanded0.size() > c->inputs_[0].size() &&
-        inputs1_size + expanded0_size <
-            ExpandedCompactionByteSizeLimit(options_)) {
+        inputs1_size + expanded0_size < kExpandedCompactionByteSizeLimit) {
       InternalKey new_start, new_limit;
       GetRange(expanded0, &new_start, &new_limit);
       std::vector<FileMetaData*> expanded1;
@@ -1400,6 +1346,13 @@ void VersionSet::SetupOtherInputs(Compaction* c) {
                                    &c->grandparents_);
   }
 
+  if (false) {
+    Log(options_->info_log, "Compacting %d '%s' .. '%s'",
+        level,
+        smallest.DebugString().c_str(),
+        largest.DebugString().c_str());
+  }
+
   // Update the place where we will do the next compaction for this level.
   // We update this immediately instead of waiting for the VersionEdit
   // to be applied so that if the compaction fails, we will try a different
@@ -1415,7 +1368,7 @@ Compaction* VersionSet::CompactRange(
   std::vector<FileMetaData*> inputs;
   current_->GetOverlappingInputs(level, begin, end, &inputs);
   if (inputs.empty()) {
-    return nullptr;
+    return NULL;
   }
 
   // Avoid compacting too much in one shot in case the range is large.
@@ -1423,7 +1376,7 @@ Compaction* VersionSet::CompactRange(
   // and we must not pick one file and drop another older file if the
   // two files overlap.
   if (level > 0) {
-    const uint64_t limit = MaxFileSizeForLevel(options_, level);
+    const uint64_t limit = MaxFileSizeForLevel(level);
     uint64_t total = 0;
     for (size_t i = 0; i < inputs.size(); i++) {
       uint64_t s = inputs[i]->file_size;
@@ -1435,7 +1388,7 @@ Compaction* VersionSet::CompactRange(
     }
   }
 
-  Compaction* c = new Compaction(options_, level);
+  Compaction* c = new Compaction(level);
   c->input_version_ = current_;
   c->input_version_->Ref();
   c->inputs_[0] = inputs;
@@ -1443,10 +1396,10 @@ Compaction* VersionSet::CompactRange(
   return c;
 }
 
-Compaction::Compaction(const Options* options, int level)
+Compaction::Compaction(int level)
     : level_(level),
-      max_output_file_size_(MaxFileSizeForLevel(options, level)),
-      input_version_(nullptr),
+      max_output_file_size_(MaxFileSizeForLevel(level)),
+      input_version_(NULL),
       grandparent_index_(0),
       seen_key_(false),
       overlapped_bytes_(0) {
@@ -1456,19 +1409,18 @@ Compaction::Compaction(const Options* options, int level)
 }
 
 Compaction::~Compaction() {
-  if (input_version_ != nullptr) {
+  if (input_version_ != NULL) {
     input_version_->Unref();
   }
 }
 
 bool Compaction::IsTrivialMove() const {
-  const VersionSet* vset = input_version_->vset_;
   // Avoid a move if there is lots of overlapping grandparent data.
   // Otherwise, the move could create a parent file that will require
   // a very expensive merge later on.
-  return (num_input_files(0) == 1 && num_input_files(1) == 0 &&
-          TotalFileSize(grandparents_) <=
-              MaxGrandParentOverlapBytes(vset->options_));
+  return (num_input_files(0) == 1 &&
+          num_input_files(1) == 0 &&
+          TotalFileSize(grandparents_) <= kMaxGrandParentOverlapBytes);
 }
 
 void Compaction::AddInputDeletions(VersionEdit* edit) {
@@ -1501,9 +1453,8 @@ bool Compaction::IsBaseLevelForKey(const Slice& user_key) {
 }
 
 bool Compaction::ShouldStopBefore(const Slice& internal_key) {
-  const VersionSet* vset = input_version_->vset_;
   // Scan to find earliest grandparent file that contains key.
-  const InternalKeyComparator* icmp = &vset->icmp_;
+  const InternalKeyComparator* icmp = &input_version_->vset_->icmp_;
   while (grandparent_index_ < grandparents_.size() &&
       icmp->Compare(internal_key,
                     grandparents_[grandparent_index_]->largest.Encode()) > 0) {
@@ -1514,7 +1465,7 @@ bool Compaction::ShouldStopBefore(const Slice& internal_key) {
   }
   seen_key_ = true;
 
-  if (overlapped_bytes_ > MaxGrandParentOverlapBytes(vset->options_)) {
+  if (overlapped_bytes_ > kMaxGrandParentOverlapBytes) {
     // Too much overlap for current output; start new output
     overlapped_bytes_ = 0;
     return true;
@@ -1524,9 +1475,9 @@ bool Compaction::ShouldStopBefore(const Slice& internal_key) {
 }
 
 void Compaction::ReleaseInputs() {
-  if (input_version_ != nullptr) {
+  if (input_version_ != NULL) {
     input_version_->Unref();
-    input_version_ = nullptr;
+    input_version_ = NULL;
   }
 }
 

@@ -172,7 +172,7 @@ class Constructor {
 
   virtual const KVMap& data() { return data_; }
 
-  virtual DB* db() const { return nullptr; }  // Overridden in DBConstructor
+  virtual DB* db() const { return NULL; }  // Overridden in DBConstructor
 
  private:
   KVMap data_;
@@ -183,13 +183,13 @@ class BlockConstructor: public Constructor {
   explicit BlockConstructor(const Comparator* cmp)
       : Constructor(cmp),
         comparator_(cmp),
-        block_(nullptr) { }
+        block_(NULL) { }
   ~BlockConstructor() {
     delete block_;
   }
   virtual Status FinishImpl(const Options& options, const KVMap& data) {
     delete block_;
-    block_ = nullptr;
+    block_ = NULL;
     BlockBuilder builder(&options);
 
     for (KVMap::const_iterator it = data.begin();
@@ -222,7 +222,7 @@ class TableConstructor: public Constructor {
  public:
   TableConstructor(const Comparator* cmp)
       : Constructor(cmp),
-        source_(nullptr), table_(nullptr) {
+        source_(NULL), table_(NULL) {
   }
   ~TableConstructor() {
     Reset();
@@ -262,8 +262,8 @@ class TableConstructor: public Constructor {
   void Reset() {
     delete table_;
     delete source_;
-    table_ = nullptr;
-    source_ = nullptr;
+    table_ = NULL;
+    source_ = NULL;
   }
 
   StringSource* source_;
@@ -351,7 +351,7 @@ class DBConstructor: public Constructor {
   explicit DBConstructor(const Comparator* cmp)
       : Constructor(cmp),
         comparator_(cmp) {
-    db_ = nullptr;
+    db_ = NULL;
     NewDB();
   }
   ~DBConstructor() {
@@ -359,7 +359,7 @@ class DBConstructor: public Constructor {
   }
   virtual Status FinishImpl(const Options& options, const KVMap& data) {
     delete db_;
-    db_ = nullptr;
+    db_ = NULL;
     NewDB();
     for (KVMap::const_iterator it = data.begin();
          it != data.end();
@@ -436,11 +436,11 @@ static const int kNumTestArgs = sizeof(kTestArgList) / sizeof(kTestArgList[0]);
 
 class Harness {
  public:
-  Harness() : constructor_(nullptr) { }
+  Harness() : constructor_(NULL) { }
 
   void Init(const TestArgs& args) {
     delete constructor_;
-    constructor_ = nullptr;
+    constructor_ = NULL;
     options_ = Options();
 
     options_.block_restart_interval = args.restart_interval;
@@ -636,7 +636,7 @@ class Harness {
     }
   }
 
-  // Returns nullptr if not running against a DB
+  // Returns NULL if not running against a DB
   DB* db() const { return constructor_->db(); }
 
  private:
@@ -853,20 +853,12 @@ TEST(TableTest, ApproximateOffsetOfCompressed) {
   options.compression = kSnappyCompression;
   c.Finish(options, &keys, &kvmap);
 
-  // Expected upper and lower bounds of space used by compressible strings.
-  static const int kSlop = 1000;  // Compressor effectiveness varies.
-  const int expected = 2500;  // 10000 * compression ratio (0.25)
-  const int min_z = expected - kSlop;
-  const int max_z = expected + kSlop;
-
-  ASSERT_TRUE(Between(c.ApproximateOffsetOf("abc"), 0, kSlop));
-  ASSERT_TRUE(Between(c.ApproximateOffsetOf("k01"), 0, kSlop));
-  ASSERT_TRUE(Between(c.ApproximateOffsetOf("k02"), 0, kSlop));
-  // Have now emitted a large compressible string, so adjust expected offset.
-  ASSERT_TRUE(Between(c.ApproximateOffsetOf("k03"), min_z, max_z));
-  ASSERT_TRUE(Between(c.ApproximateOffsetOf("k04"), min_z, max_z));
-  // Have now emitted two large compressible strings, so adjust expected offset.
-  ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"), 2 * min_z, 2 * max_z));
+  ASSERT_TRUE(Between(c.ApproximateOffsetOf("abc"),       0,      0));
+  ASSERT_TRUE(Between(c.ApproximateOffsetOf("k01"),       0,      0));
+  ASSERT_TRUE(Between(c.ApproximateOffsetOf("k02"),       0,      0));
+  ASSERT_TRUE(Between(c.ApproximateOffsetOf("k03"),    2000,   3000));
+  ASSERT_TRUE(Between(c.ApproximateOffsetOf("k04"),    2000,   3000));
+  ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"),    4000,   6000));
 }
 
 }  // namespace leveldb

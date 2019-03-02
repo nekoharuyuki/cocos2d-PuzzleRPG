@@ -2,9 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include <vector>
-
 #include "util/coding.h"
+
 #include "util/testharness.h"
 
 namespace leveldb {
@@ -89,7 +88,7 @@ TEST(Coding, Varint32) {
     uint32_t actual;
     const char* start = p;
     p = GetVarint32Ptr(p, limit, &actual);
-    ASSERT_TRUE(p != nullptr);
+    ASSERT_TRUE(p != NULL);
     ASSERT_EQ(expected, actual);
     ASSERT_EQ(VarintLength(actual), p - start);
   }
@@ -124,18 +123,19 @@ TEST(Coding, Varint64) {
     uint64_t actual;
     const char* start = p;
     p = GetVarint64Ptr(p, limit, &actual);
-    ASSERT_TRUE(p != nullptr);
+    ASSERT_TRUE(p != NULL);
     ASSERT_EQ(values[i], actual);
     ASSERT_EQ(VarintLength(actual), p - start);
   }
   ASSERT_EQ(p, limit);
+
 }
 
 TEST(Coding, Varint32Overflow) {
   uint32_t result;
   std::string input("\x81\x82\x83\x84\x85\x11");
   ASSERT_TRUE(GetVarint32Ptr(input.data(), input.data() + input.size(), &result)
-              == nullptr);
+              == NULL);
 }
 
 TEST(Coding, Varint32Truncation) {
@@ -144,10 +144,9 @@ TEST(Coding, Varint32Truncation) {
   PutVarint32(&s, large_value);
   uint32_t result;
   for (size_t len = 0; len < s.size() - 1; len++) {
-    ASSERT_TRUE(GetVarint32Ptr(s.data(), s.data() + len, &result) == nullptr);
+    ASSERT_TRUE(GetVarint32Ptr(s.data(), s.data() + len, &result) == NULL);
   }
-  ASSERT_TRUE(
-      GetVarint32Ptr(s.data(), s.data() + s.size(), &result) != nullptr);
+  ASSERT_TRUE(GetVarint32Ptr(s.data(), s.data() + s.size(), &result) != NULL);
   ASSERT_EQ(large_value, result);
 }
 
@@ -155,7 +154,7 @@ TEST(Coding, Varint64Overflow) {
   uint64_t result;
   std::string input("\x81\x82\x83\x84\x85\x81\x82\x83\x84\x85\x11");
   ASSERT_TRUE(GetVarint64Ptr(input.data(), input.data() + input.size(), &result)
-              == nullptr);
+              == NULL);
 }
 
 TEST(Coding, Varint64Truncation) {
@@ -164,10 +163,9 @@ TEST(Coding, Varint64Truncation) {
   PutVarint64(&s, large_value);
   uint64_t result;
   for (size_t len = 0; len < s.size() - 1; len++) {
-    ASSERT_TRUE(GetVarint64Ptr(s.data(), s.data() + len, &result) == nullptr);
+    ASSERT_TRUE(GetVarint64Ptr(s.data(), s.data() + len, &result) == NULL);
   }
-  ASSERT_TRUE(
-      GetVarint64Ptr(s.data(), s.data() + s.size(), &result) != nullptr);
+  ASSERT_TRUE(GetVarint64Ptr(s.data(), s.data() + s.size(), &result) != NULL);
   ASSERT_EQ(large_value, result);
 }
 

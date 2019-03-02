@@ -84,18 +84,28 @@ inline size_t InternalKeyEncodingLength(const ParsedInternalKey& key) {
 }
 
 // Append the serialization of "key" to *result.
-void AppendInternalKey(std::string* result, const ParsedInternalKey& key);
+extern void AppendInternalKey(std::string* result,
+                              const ParsedInternalKey& key);
 
 // Attempt to parse an internal key from "internal_key".  On success,
 // stores the parsed data in "*result", and returns true.
 //
 // On error, returns false, leaves "*result" in an undefined state.
-bool ParseInternalKey(const Slice& internal_key, ParsedInternalKey* result);
+extern bool ParseInternalKey(const Slice& internal_key,
+                             ParsedInternalKey* result);
 
 // Returns the user key portion of an internal key.
 inline Slice ExtractUserKey(const Slice& internal_key) {
   assert(internal_key.size() >= 8);
   return Slice(internal_key.data(), internal_key.size() - 8);
+}
+
+inline ValueType ExtractValueType(const Slice& internal_key) {
+  assert(internal_key.size() >= 8);
+  const size_t n = internal_key.size();
+  uint64_t num = DecodeFixed64(internal_key.data() + n - 8);
+  unsigned char c = num & 0xff;
+  return static_cast<ValueType>(c);
 }
 
 // A comparator for internal keys that uses a specified comparator for

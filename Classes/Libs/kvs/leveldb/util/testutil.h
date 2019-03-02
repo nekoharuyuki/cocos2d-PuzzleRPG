@@ -14,17 +14,17 @@ namespace test {
 
 // Store in *dst a random string of length "len" and return a Slice that
 // references the generated data.
-Slice RandomString(Random* rnd, int len, std::string* dst);
+extern Slice RandomString(Random* rnd, int len, std::string* dst);
 
 // Return a random key with the specified length that may contain interesting
 // characters (e.g. \x00, \xff, etc.).
-std::string RandomKey(Random* rnd, int len);
+extern std::string RandomKey(Random* rnd, int len);
 
 // Store in *dst a string of length "len" that will compress to
 // "N*compressed_fraction" bytes and return a Slice that references
 // the generated data.
-Slice CompressibleString(Random* rnd, double compressed_fraction,
-                         size_t len, std::string* dst);
+extern Slice CompressibleString(Random* rnd, double compressed_fraction,
+                                size_t len, std::string* dst);
 
 // A wrapper that allows injection of errors.
 class ErrorEnv : public EnvWrapper {
@@ -40,20 +40,10 @@ class ErrorEnv : public EnvWrapper {
                                  WritableFile** result) {
     if (writable_file_error_) {
       ++num_writable_file_errors_;
-      *result = nullptr;
+      *result = NULL;
       return Status::IOError(fname, "fake error");
     }
     return target()->NewWritableFile(fname, result);
-  }
-
-  virtual Status NewAppendableFile(const std::string& fname,
-                                   WritableFile** result) {
-    if (writable_file_error_) {
-      ++num_writable_file_errors_;
-      *result = nullptr;
-      return Status::IOError(fname, "fake error");
-    }
-    return target()->NewAppendableFile(fname, result);
   }
 };
 

@@ -19,11 +19,10 @@
 #include <stddef.h>
 #include <string.h>
 #include <string>
-#include "leveldb/export.h"
 
 namespace leveldb {
 
-class LEVELDB_EXPORT Slice {
+class Slice {
  public:
   // Create an empty slice.
   Slice() : data_(""), size_(0) { }
@@ -36,10 +35,6 @@ class LEVELDB_EXPORT Slice {
 
   // Create a slice that refers to s[0,strlen(s)-1]
   Slice(const char* s) : data_(s), size_(strlen(s)) { }
-
-  // Intentionally copyable.
-  Slice(const Slice&) = default;
-  Slice& operator=(const Slice&) = default;
 
   // Return a pointer to the beginning of the referenced data
   const char* data() const { return data_; }
@@ -85,6 +80,8 @@ class LEVELDB_EXPORT Slice {
  private:
   const char* data_;
   size_t size_;
+
+  // Intentionally copyable
 };
 
 inline bool operator==(const Slice& x, const Slice& y) {

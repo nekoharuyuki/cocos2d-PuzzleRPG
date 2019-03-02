@@ -3,13 +3,11 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include <algorithm>
-#include <cstdint>
-#include <string>
-
+#include <stdint.h>
 #include "leveldb/comparator.h"
 #include "leveldb/slice.h"
+#include "port/port.h"
 #include "util/logging.h"
-#include "util/no_destructor.h"
 
 namespace leveldb {
 
@@ -68,9 +66,16 @@ class BytewiseComparatorImpl : public Comparator {
 };
 }  // namespace
 
+static port::OnceType once = LEVELDB_ONCE_INIT;
+static const Comparator* bytewise;
+
+static void InitModule() {
+  bytewise = new BytewiseComparatorImpl;
+}
+
 const Comparator* BytewiseComparator() {
-  static NoDestructor<BytewiseComparatorImpl> singleton;
-  return singleton.get();
+  port::InitOnce(&once, InitModule);
+  return bytewise;
 }
 
 }  // namespace leveldb

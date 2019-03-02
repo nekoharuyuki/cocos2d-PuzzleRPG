@@ -2,10 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "leveldb/dumpfile.h"
-
 #include <stdio.h>
-
 #include "db/dbformat.h"
 #include "db/filename.h"
 #include "db/log_reader.h"
@@ -145,8 +142,8 @@ Status DumpDescriptor(Env* env, const std::string& fname, WritableFile* dst) {
 
 Status DumpTable(Env* env, const std::string& fname, WritableFile* dst) {
   uint64_t file_size;
-  RandomAccessFile* file = nullptr;
-  Table* table = nullptr;
+  RandomAccessFile* file = NULL;
+  Table* table = NULL;
   Status s = env->GetFileSize(fname, &file_size);
   if (s.ok()) {
     s = env->NewRandomAccessFile(fname, &file);

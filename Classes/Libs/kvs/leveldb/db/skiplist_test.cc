@@ -5,8 +5,6 @@
 #include "db/skiplist.h"
 #include <set>
 #include "leveldb/env.h"
-#include "port/port.h"
-#include "port/thread_annotations.h"
 #include "util/arena.h"
 #include "util/hash.h"
 #include "util/random.h"
@@ -252,7 +250,7 @@ class ConcurrentTest {
         // Note that generation 0 is never inserted, so it is ok if
         // <*,0,*> is missing.
         ASSERT_TRUE((gen(pos) == 0) ||
-                    (gen(pos) > static_cast<Key>(initial_state.Get(key(pos))))
+                    (gen(pos) > initial_state.Get(key(pos)))
                     ) << "key: " << key(pos)
                       << "; gen: " << gen(pos)
                       << "; initgen: "
@@ -310,11 +308,11 @@ class TestState {
 
   explicit TestState(int s)
       : seed_(s),
-        quit_flag_(nullptr),
+        quit_flag_(NULL),
         state_(STARTING),
         state_cv_(&mu_) {}
 
-  void Wait(ReaderState s) LOCKS_EXCLUDED(mu_) {
+  void Wait(ReaderState s) {
     mu_.Lock();
     while (state_ != s) {
       state_cv_.Wait();
@@ -322,7 +320,7 @@ class TestState {
     mu_.Unlock();
   }
 
-  void Change(ReaderState s) LOCKS_EXCLUDED(mu_) {
+  void Change(ReaderState s) {
     mu_.Lock();
     state_ = s;
     state_cv_.Signal();
@@ -331,8 +329,8 @@ class TestState {
 
  private:
   port::Mutex mu_;
-  ReaderState state_ GUARDED_BY(mu_);
-  port::CondVar state_cv_ GUARDED_BY(mu_);
+  ReaderState state_;
+  port::CondVar state_cv_;
 };
 
 static void ConcurrentReader(void* arg) {
@@ -362,7 +360,7 @@ static void RunConcurrent(int run) {
     for (int i = 0; i < kSize; i++) {
       state.t_.WriteStep(&rnd);
     }
-    state.quit_flag_.Release_Store(&state);  // Any non-null arg will do
+    state.quit_flag_.Release_Store(&state);  // Any non-NULL arg will do
     state.Wait(TestState::DONE);
   }
 }

@@ -32,7 +32,7 @@ class Reader {
   // Create a reader that will return log records from "*file".
   // "*file" must remain live while this Reader is in use.
   //
-  // If "reporter" is non-null, it is notified whenever some data is
+  // If "reporter" is non-NULL, it is notified whenever some data is
   // dropped due to a detected corruption.  "*reporter" must remain
   // live while this Reader is in use.
   //
@@ -72,11 +72,6 @@ class Reader {
 
   // Offset at which to start looking for the first record to return
   uint64_t const initial_offset_;
-
-  // True if we are resynchronizing after a seek (initial_offset_ > 0). In
-  // particular, a run of kMiddleType and kLastType records can be silently
-  // skipped in this mode
-  bool resyncing_;
 
   // Extend record types with the following special values
   enum {

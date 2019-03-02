@@ -76,7 +76,7 @@ static bool FLAGS_transaction = true;
 static bool FLAGS_WAL_enabled = true;
 
 // Use the db with the following name.
-static const char* FLAGS_db = nullptr;
+static const char* FLAGS_db = NULL;
 
 inline
 static void ExecErrorCheck(int status, char *err_msg) {
@@ -107,8 +107,7 @@ inline
 static void WalCheckpoint(sqlite3* db_) {
   // Flush all writes to disk
   if (FLAGS_WAL_enabled) {
-    sqlite3_wal_checkpoint_v2(db_, nullptr, SQLITE_CHECKPOINT_FULL, nullptr,
-                              nullptr);
+    sqlite3_wal_checkpoint_v2(db_, NULL, SQLITE_CHECKPOINT_FULL, NULL, NULL);
   }
 }
 
@@ -208,18 +207,18 @@ class Benchmark {
     fprintf(stderr, "SQLite:     version %s\n", SQLITE_VERSION);
 
 #if defined(__linux)
-    time_t now = time(nullptr);
+    time_t now = time(NULL);
     fprintf(stderr, "Date:       %s", ctime(&now));  // ctime() adds newline
 
     FILE* cpuinfo = fopen("/proc/cpuinfo", "r");
-    if (cpuinfo != nullptr) {
+    if (cpuinfo != NULL) {
       char line[1000];
       int num_cpus = 0;
       std::string cpu_type;
       std::string cache_size;
-      while (fgets(line, sizeof(line), cpuinfo) != nullptr) {
+      while (fgets(line, sizeof(line), cpuinfo) != NULL) {
         const char* sep = strchr(line, ':');
-        if (sep == nullptr) {
+        if (sep == NULL) {
           continue;
         }
         Slice key = TrimSpace(Slice(line, sep - 1 - line));
@@ -314,7 +313,7 @@ class Benchmark {
   };
 
   Benchmark()
-  : db_(nullptr),
+  : db_(NULL),
     db_num_(0),
     num_(FLAGS_num),
     reads_(FLAGS_reads < 0 ? FLAGS_num : FLAGS_reads),
@@ -346,12 +345,12 @@ class Benchmark {
     Open();
 
     const char* benchmarks = FLAGS_benchmarks;
-    while (benchmarks != nullptr) {
+    while (benchmarks != NULL) {
       const char* sep = strchr(benchmarks, ',');
       Slice name;
-      if (sep == nullptr) {
+      if (sep == NULL) {
         name = benchmarks;
-        benchmarks = nullptr;
+        benchmarks = NULL;
       } else {
         name = Slice(benchmarks, sep - benchmarks);
         benchmarks = sep + 1;
@@ -416,11 +415,11 @@ class Benchmark {
   }
 
   void Open() {
-    assert(db_ == nullptr);
+    assert(db_ == NULL);
 
     int status;
     char file_name[100];
-    char* err_msg = nullptr;
+    char* err_msg = NULL;
     db_num_++;
 
     // Open database
@@ -440,7 +439,7 @@ class Benchmark {
     char cache_size[100];
     snprintf(cache_size, sizeof(cache_size), "PRAGMA cache_size = %d",
              FLAGS_num_pages);
-    status = sqlite3_exec(db_, cache_size, nullptr, nullptr, &err_msg);
+    status = sqlite3_exec(db_, cache_size, NULL, NULL, &err_msg);
     ExecErrorCheck(status, err_msg);
 
     // FLAGS_page_size is defaulted to 1024
@@ -448,7 +447,7 @@ class Benchmark {
       char page_size[100];
       snprintf(page_size, sizeof(page_size), "PRAGMA page_size = %d",
                FLAGS_page_size);
-      status = sqlite3_exec(db_, page_size, nullptr, nullptr, &err_msg);
+      status = sqlite3_exec(db_, page_size, NULL, NULL, &err_msg);
       ExecErrorCheck(status, err_msg);
     }
 
@@ -458,10 +457,9 @@ class Benchmark {
 
       // LevelDB's default cache size is a combined 4 MB
       std::string WAL_checkpoint = "PRAGMA wal_autocheckpoint = 4096";
-      status = sqlite3_exec(db_, WAL_stmt.c_str(), nullptr, nullptr, &err_msg);
+      status = sqlite3_exec(db_, WAL_stmt.c_str(), NULL, NULL, &err_msg);
       ExecErrorCheck(status, err_msg);
-      status = sqlite3_exec(db_, WAL_checkpoint.c_str(), nullptr, nullptr,
-                            &err_msg);
+      status = sqlite3_exec(db_, WAL_checkpoint.c_str(), NULL, NULL, &err_msg);
       ExecErrorCheck(status, err_msg);
     }
 
@@ -472,8 +470,7 @@ class Benchmark {
     std::string stmt_array[] = { locking_stmt, create_stmt };
     int stmt_array_length = sizeof(stmt_array) / sizeof(std::string);
     for (int i = 0; i < stmt_array_length; i++) {
-      status = sqlite3_exec(db_, stmt_array[i].c_str(), nullptr, nullptr,
-                            &err_msg);
+      status = sqlite3_exec(db_, stmt_array[i].c_str(), NULL, NULL, &err_msg);
       ExecErrorCheck(status, err_msg);
     }
   }
@@ -487,7 +484,7 @@ class Benchmark {
         return;
       }
       sqlite3_close(db_);
-      db_ = nullptr;
+      db_ = NULL;
       Open();
       Start();
     }
@@ -498,7 +495,7 @@ class Benchmark {
       message_ = msg;
     }
 
-    char* err_msg = nullptr;
+    char* err_msg = NULL;
     int status;
 
     sqlite3_stmt *replace_stmt, *begin_trans_stmt, *end_trans_stmt;
@@ -509,18 +506,18 @@ class Benchmark {
     // Check for synchronous flag in options
     std::string sync_stmt = (write_sync) ? "PRAGMA synchronous = FULL" :
                                            "PRAGMA synchronous = OFF";
-    status = sqlite3_exec(db_, sync_stmt.c_str(), nullptr, nullptr, &err_msg);
+    status = sqlite3_exec(db_, sync_stmt.c_str(), NULL, NULL, &err_msg);
     ExecErrorCheck(status, err_msg);
 
     // Preparing sqlite3 statements
     status = sqlite3_prepare_v2(db_, replace_str.c_str(), -1,
-                                &replace_stmt, nullptr);
+                                &replace_stmt, NULL);
     ErrorCheck(status);
     status = sqlite3_prepare_v2(db_, begin_trans_str.c_str(), -1,
-                                &begin_trans_stmt, nullptr);
+                                &begin_trans_stmt, NULL);
     ErrorCheck(status);
     status = sqlite3_prepare_v2(db_, end_trans_str.c_str(), -1,
-                                &end_trans_stmt, nullptr);
+                                &end_trans_stmt, NULL);
     ErrorCheck(status);
 
     bool transaction = (entries_per_batch > 1);
@@ -591,12 +588,12 @@ class Benchmark {
 
     // Preparing sqlite3 statements
     status = sqlite3_prepare_v2(db_, begin_trans_str.c_str(), -1,
-                                &begin_trans_stmt, nullptr);
+                                &begin_trans_stmt, NULL);
     ErrorCheck(status);
     status = sqlite3_prepare_v2(db_, end_trans_str.c_str(), -1,
-                                &end_trans_stmt, nullptr);
+                                &end_trans_stmt, NULL);
     ErrorCheck(status);
-    status = sqlite3_prepare_v2(db_, read_str.c_str(), -1, &read_stmt, nullptr);
+    status = sqlite3_prepare_v2(db_, read_str.c_str(), -1, &read_stmt, NULL);
     ErrorCheck(status);
 
     bool transaction = (entries_per_batch > 1);
@@ -654,7 +651,7 @@ class Benchmark {
     sqlite3_stmt *pStmt;
     std::string read_str = "SELECT * FROM test ORDER BY key";
 
-    status = sqlite3_prepare_v2(db_, read_str.c_str(), -1, &pStmt, nullptr);
+    status = sqlite3_prepare_v2(db_, read_str.c_str(), -1, &pStmt, NULL);
     ErrorCheck(status);
     for (int i = 0; i < reads_ && SQLITE_ROW == sqlite3_step(pStmt); i++) {
       bytes_ += sqlite3_column_bytes(pStmt, 1) + sqlite3_column_bytes(pStmt, 2);
@@ -709,7 +706,7 @@ int main(int argc, char** argv) {
   }
 
   // Choose a location for the test database if none given with --db=<path>
-  if (FLAGS_db == nullptr) {
+  if (FLAGS_db == NULL) {
       leveldb::Env::Default()->GetTestDirectory(&default_db_path);
       default_db_path += "/dbbench";
       FLAGS_db = default_db_path.c_str();

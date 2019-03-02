@@ -36,10 +36,10 @@ class CorruptionTest {
     tiny_cache_ = NewLRUCache(100);
     options_.env = &env_;
     options_.block_cache = tiny_cache_;
-    dbname_ = test::TmpDir() + "/corruption_test";
+    dbname_ = test::TmpDir() + "/db_test";
     DestroyDB(dbname_, options_);
 
-    db_ = nullptr;
+    db_ = NULL;
     options_.create_if_missing = true;
     Reopen();
     options_.create_if_missing = false;
@@ -53,7 +53,7 @@ class CorruptionTest {
 
   Status TryReopen() {
     delete db_;
-    db_ = nullptr;
+    db_ = NULL;
     return DB::Open(options_, dbname_, &db_);
   }
 
@@ -63,7 +63,7 @@ class CorruptionTest {
 
   void RepairDB() {
     delete db_;
-    db_ = nullptr;
+    db_ = NULL;
     ASSERT_OK(::leveldb::RepairDB(dbname_, options_));
   }
 
@@ -237,8 +237,8 @@ TEST(CorruptionTest, TableFile) {
   Build(100);
   DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
   dbi->TEST_CompactMemTable();
-  dbi->TEST_CompactRange(0, nullptr, nullptr);
-  dbi->TEST_CompactRange(1, nullptr, nullptr);
+  dbi->TEST_CompactRange(0, NULL, NULL);
+  dbi->TEST_CompactRange(1, NULL, NULL);
 
   Corrupt(kTableFile, 100, 1);
   Check(90, 99);
@@ -251,8 +251,8 @@ TEST(CorruptionTest, TableFileRepair) {
   Build(100);
   DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
   dbi->TEST_CompactMemTable();
-  dbi->TEST_CompactRange(0, nullptr, nullptr);
-  dbi->TEST_CompactRange(1, nullptr, nullptr);
+  dbi->TEST_CompactRange(0, NULL, NULL);
+  dbi->TEST_CompactRange(1, NULL, NULL);
 
   Corrupt(kTableFile, 100, 1);
   RepairDB();
@@ -302,7 +302,7 @@ TEST(CorruptionTest, CorruptedDescriptor) {
   ASSERT_OK(db_->Put(WriteOptions(), "foo", "hello"));
   DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
   dbi->TEST_CompactMemTable();
-  dbi->TEST_CompactRange(0, nullptr, nullptr);
+  dbi->TEST_CompactRange(0, NULL, NULL);
 
   Corrupt(kDescriptorFile, 0, 1000);
   Status s = TryReopen();
@@ -343,7 +343,7 @@ TEST(CorruptionTest, CompactionInputErrorParanoid) {
     Corrupt(kTableFile, 100, 1);
     env_.SleepForMicroseconds(100000);
   }
-  dbi->CompactRange(nullptr, nullptr);
+  dbi->CompactRange(NULL, NULL);
 
   // Write must fail because of corrupted table
   std::string tmp1, tmp2;

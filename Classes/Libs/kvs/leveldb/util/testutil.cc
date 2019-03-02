@@ -31,8 +31,8 @@ std::string RandomKey(Random* rnd, int len) {
 }
 
 
-Slice CompressibleString(Random* rnd, double compressed_fraction,
-                         size_t len, std::string* dst) {
+extern Slice CompressibleString(Random* rnd, double compressed_fraction,
+                                size_t len, std::string* dst) {
   int raw = static_cast<int>(len * compressed_fraction);
   if (raw < 1) raw = 1;
   std::string raw_data;

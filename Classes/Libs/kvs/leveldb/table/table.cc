@@ -39,7 +39,7 @@ Status Table::Open(const Options& options,
                    RandomAccessFile* file,
                    uint64_t size,
                    Table** table) {
-  *table = nullptr;
+  *table = NULL;
   if (size < Footer::kEncodedLength) {
     return Status::Corruption("file is too short to be an sstable");
   }
@@ -55,36 +55,41 @@ Status Table::Open(const Options& options,
   if (!s.ok()) return s;
 
   // Read the index block
-  BlockContents index_block_contents;
+  BlockContents contents;
+  Block* index_block = NULL;
   if (s.ok()) {
     ReadOptions opt;
     if (options.paranoid_checks) {
       opt.verify_checksums = true;
     }
-    s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
+    s = ReadBlock(file, opt, footer.index_handle(), &contents);
+    if (s.ok()) {
+      index_block = new Block(contents);
+    }
   }
 
   if (s.ok()) {
     // We've successfully read the footer and the index block: we're
     // ready to serve requests.
-    Block* index_block = new Block(index_block_contents);
     Rep* rep = new Table::Rep;
     rep->options = options;
     rep->file = file;
     rep->metaindex_handle = footer.metaindex_handle();
     rep->index_block = index_block;
     rep->cache_id = (options.block_cache ? options.block_cache->NewId() : 0);
-    rep->filter_data = nullptr;
-    rep->filter = nullptr;
+    rep->filter_data = NULL;
+    rep->filter = NULL;
     *table = new Table(rep);
     (*table)->ReadMeta(footer);
+  } else {
+    if (index_block) delete index_block;
   }
 
   return s;
 }
 
 void Table::ReadMeta(const Footer& footer) {
-  if (rep_->options.filter_policy == nullptr) {
+  if (rep_->options.filter_policy == NULL) {
     return;  // Do not need any metadata
   }
 
@@ -161,8 +166,8 @@ Iterator* Table::BlockReader(void* arg,
                              const Slice& index_value) {
   Table* table = reinterpret_cast<Table*>(arg);
   Cache* block_cache = table->rep_->options.block_cache;
-  Block* block = nullptr;
-  Cache::Handle* cache_handle = nullptr;
+  Block* block = NULL;
+  Cache::Handle* cache_handle = NULL;
 
   BlockHandle handle;
   Slice input = index_value;
@@ -172,13 +177,13 @@ Iterator* Table::BlockReader(void* arg,
 
   if (s.ok()) {
     BlockContents contents;
-    if (block_cache != nullptr) {
+    if (block_cache != NULL) {
       char cache_key_buffer[16];
       EncodeFixed64(cache_key_buffer, table->rep_->cache_id);
       EncodeFixed64(cache_key_buffer+8, handle.offset());
       Slice key(cache_key_buffer, sizeof(cache_key_buffer));
       cache_handle = block_cache->Lookup(key);
-      if (cache_handle != nullptr) {
+      if (cache_handle != NULL) {
         block = reinterpret_cast<Block*>(block_cache->Value(cache_handle));
       } else {
         s = ReadBlock(table->rep_->file, options, handle, &contents);
@@ -199,10 +204,10 @@ Iterator* Table::BlockReader(void* arg,
   }
 
   Iterator* iter;
-  if (block != nullptr) {
+  if (block != NULL) {
     iter = block->NewIterator(table->rep_->options.comparator);
-    if (cache_handle == nullptr) {
-      iter->RegisterCleanup(&DeleteBlock, block, nullptr);
+    if (cache_handle == NULL) {
+      iter->RegisterCleanup(&DeleteBlock, block, NULL);
     } else {
       iter->RegisterCleanup(&ReleaseBlock, block_cache, cache_handle);
     }
@@ -228,7 +233,7 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k,
     Slice handle_value = iiter->value();
     FilterBlockReader* filter = rep_->filter;
     BlockHandle handle;
-    if (filter != nullptr &&
+    if (filter != NULL &&
         handle.DecodeFrom(&handle_value).ok() &&
         !filter->KeyMayMatch(handle.offset(), k)) {
       // Not found

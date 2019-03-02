@@ -47,8 +47,8 @@ class CacheTest {
 
   int Lookup(int key) {
     Cache::Handle* handle = cache_->Lookup(EncodeKey(key));
-    const int r = (handle == nullptr) ? -1 : DecodeValue(cache_->Value(handle));
-    if (handle != nullptr) {
+    const int r = (handle == NULL) ? -1 : DecodeValue(cache_->Value(handle));
+    if (handle != NULL) {
       cache_->Release(handle);
     }
     return r;
@@ -57,11 +57,6 @@ class CacheTest {
   void Insert(int key, int value, int charge = 1) {
     cache_->Release(cache_->Insert(EncodeKey(key), EncodeValue(value), charge,
                                    &CacheTest::Deleter));
-  }
-
-  Cache::Handle* InsertAndReturnHandle(int key, int value, int charge = 1) {
-    return cache_->Insert(EncodeKey(key), EncodeValue(value), charge,
-                          &CacheTest::Deleter);
   }
 
   void Erase(int key) {
@@ -140,11 +135,8 @@ TEST(CacheTest, EntriesArePinned) {
 TEST(CacheTest, EvictionPolicy) {
   Insert(100, 101);
   Insert(200, 201);
-  Insert(300, 301);
-  Cache::Handle* h = cache_->Lookup(EncodeKey(300));
 
-  // Frequently used entry must be kept around,
-  // as must things that are still in use.
+  // Frequently used entry must be kept around
   for (int i = 0; i < kCacheSize + 100; i++) {
     Insert(1000+i, 2000+i);
     ASSERT_EQ(2000+i, Lookup(1000+i));
@@ -152,25 +144,6 @@ TEST(CacheTest, EvictionPolicy) {
   }
   ASSERT_EQ(101, Lookup(100));
   ASSERT_EQ(-1, Lookup(200));
-  ASSERT_EQ(301, Lookup(300));
-  cache_->Release(h);
-}
-
-TEST(CacheTest, UseExceedsCacheSize) {
-  // Overfill the cache, keeping handles on all inserted entries.
-  std::vector<Cache::Handle*> h;
-  for (int i = 0; i < kCacheSize + 100; i++) {
-    h.push_back(InsertAndReturnHandle(1000+i, 2000+i));
-  }
-
-  // Check that all the entries can be found in the cache.
-  for (int i = 0; i < h.size(); i++) {
-    ASSERT_EQ(2000+i, Lookup(1000+i));
-  }
-
-  for (int i = 0; i < h.size(); i++) {
-    cache_->Release(h[i]);
-  }
 }
 
 TEST(CacheTest, HeavyEntries) {
@@ -204,27 +177,6 @@ TEST(CacheTest, NewId) {
   uint64_t a = cache_->NewId();
   uint64_t b = cache_->NewId();
   ASSERT_NE(a, b);
-}
-
-TEST(CacheTest, Prune) {
-  Insert(1, 100);
-  Insert(2, 200);
-
-  Cache::Handle* handle = cache_->Lookup(EncodeKey(1));
-  ASSERT_TRUE(handle);
-  cache_->Prune();
-  cache_->Release(handle);
-
-  ASSERT_EQ(100, Lookup(1));
-  ASSERT_EQ(-1, Lookup(2));
-}
-
-TEST(CacheTest, ZeroSizeCache) {
-  delete cache_;
-  cache_ = NewLRUCache(0);
-
-  Insert(1, 100);
-  ASSERT_EQ(-1, Lookup(1));
 }
 
 }  // namespace leveldb
